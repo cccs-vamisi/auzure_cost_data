@@ -120,6 +120,7 @@ def excel_ship(received_data):
     sheet = book.active
 unformatted_data = asyncio.run(main_method())
 formatted_data = format_data(unformatted_data)
+print(formatted_data)
 
 
 
