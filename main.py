@@ -112,7 +112,6 @@ def format_data(data):
             date_str = list_item[i][1]
             date_obj = datetime.fromisoformat(date_str)
             list_item[i][1] = date_obj
-            print(list_item[i][1])
     return data
 
 def excel_ship(received_data):
