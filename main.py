@@ -7,7 +7,6 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.costmanagement.models import QueryDefinition, QueryDataset, QueryTimePeriod, QueryAggregation, QueryGrouping
 from datetime import datetime, timedelta, timezone
-import openpyxl
 from openpyxl import Workbook, load_workbook
 from dateutil.relativedelta import relativedelta 
 import time
@@ -118,17 +117,12 @@ async def main_method():
             task2 = asyncio.create_task(obj.fetch_cost_for_the_current_year())
             task3 = asyncio.create_task(obj.fetch_cost_for_last_three_months())
             task4 = asyncio.create_task(obj.fetch_cost_for_last_month())
-            task5 = asyncio.create_task(obj.fetch_cost_for_last_month())
-            task6 = asyncio.create_task(obj.fetch_cost_for_last_month())
-            task7 = asyncio.create_task(obj.fetch_cost_for_last_month())
+
 
             obj.final_returned_data["last_twelve_months"] = await task1
             obj.final_returned_data["current_year"] = await task2
             obj.final_returned_data["last_three_months"] = await task3
             obj.final_returned_data["last_month"] = await task4
-            obj.final_returned_data["last_month2"] = await task5
-            obj.final_returned_data["last_month3"] = await task6
-            obj.final_returned_data["last_month4"] = await task7
             return obj.final_returned_data
 
 def format_data(data):
@@ -141,12 +135,51 @@ def format_data(data):
             list_item[i][1] = date_obj
     return data
 
-def excel_ship(received_data):
-    book = load_workbook("azure_cost_data.xlsx")
-    sheet = book.active
+def excel_sheet_creation(received_data):
+    work_book = Workbook()
+    work_sheet = work_book.active
+    work_sheet.title = resource_group
+    work_sheet['A1'] = resource_group
+    work_sheet['B1'] = "Date"
+    work_sheet['C1'] = "Price"
+    work_sheet['D1'] = "CAD"
+    
+    #Create a list of all the date
+    data_for_last_twelve_months = received_data["last_twelve_months"]
+
+    date_list = []
+    price_list = []
+    total_price = sum(price_list)
+    
+    for i in range(0, len(data_for_last_twelve_months)):
+        price_list.append(data_for_last_twelve_months[i][0])
+        date_list.append(data_for_last_twelve_months[i][1])
+    
+    start_row = 2
+    start_column = 2
+    
+    for i, value in enumerate(date_list):
+        month = value.strftime("%B")
+        year = value.strftime("%Y")
+        work_sheet.cell(row=start_row+i, column=start_column, value=f"{month}, {year}")
+
+    start_row = 2
+    start_column = 3
+    
+    for i, value in enumerate(price_list):
+        value = round(value, 2)
+        work_sheet.cell(row=start_row+i, column=start_column, value=value)
+        
+    start_row = 2
+    start_column = 4
+    for i, value in enumerate(price_list):
+        work_sheet.cell(row=start_row+i, column=start_column, value="CAD")
+
+    work_book.save("azure_cost_data.xlsx")
 unformatted_data = asyncio.run(main_method())
 formatted_data = format_data(unformatted_data)
-print(json.dumps(formatted_data, indent=4, default=str))
+excel_sheet_creation(formatted_data)
+print(json.dumps(formatted_data["last_twelve_months"], indent=4, default=str))
 
 
 
