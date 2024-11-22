@@ -2,6 +2,7 @@
 import os
 import json
 import asyncio
+from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.costmanagement.models import QueryDefinition, QueryDataset, QueryTimePeriod, QueryAggregation, QueryGrouping
@@ -9,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 import openpyxl
 from openpyxl import Workbook, load_workbook
 from dateutil.relativedelta import relativedelta 
+import time
 
 print(f"Welcome to my program {os.getlogin()}! This program collects Azure resource cost data for you" + "\n"+
       "and sends it to an Excel sheet")
@@ -56,8 +58,27 @@ class Data():
         query_aggregation["totalCost"] = QueryAggregation(name="Cost", function="Sum")
         querydataset = QueryDataset(granularity="Monthly", configuration=None, aggregation=query_aggregation)
         query = QueryDefinition(type="ActualCost", timeframe="Custom", time_period=time_period, dataset=querydataset)
-        result = client.query.usage(scope = scope_value, parameters=query)
-        return result.rows
+        while True:
+            try:
+                    # Make the API request
+                    result = client.query.usage(scope=scope_value, parameters=query)
+                    return result.rows
+                
+            except HttpResponseError as e:
+                    # Check for rate-limiting headers
+                    retry_after_qpu = int(e.response.headers.get('x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after', 0))
+                    retry_after_entity = int(e.response.headers.get('x-ms-ratelimit-microsoft.costmanagement-entity-retry-after', 0))
+                    retry_after_tenant = int(e.response.headers.get('x-ms-ratelimit-microsoft.costmanagement-tenant-retry-after', 0))
+                    retry_after_client = int(e.response.headers.get('x-ms-ratelimit-microsoft.costmanagement-client-retry-after', 0))
+                    
+                    # Determine the maximum retry time
+                    max_retry_after = max(retry_after_qpu, retry_after_entity, retry_after_tenant, retry_after_client)
+                    
+                    if max_retry_after > 0:
+                        print(f"Rate-limited. Retrying in {max_retry_after} seconds...")
+                        time.sleep(max_retry_after)
+                    else:
+                        raise e  # Re-raise the exception if no retry headers are present
     
     async def fetch_cost_for_last_twelve_months(self):
         return self.helper_method(start_date_of_last_twelve_months, end_date_of_last_twelve_months, self.scope)
@@ -97,11 +118,17 @@ async def main_method():
             task2 = asyncio.create_task(obj.fetch_cost_for_the_current_year())
             task3 = asyncio.create_task(obj.fetch_cost_for_last_three_months())
             task4 = asyncio.create_task(obj.fetch_cost_for_last_month())
+            task5 = asyncio.create_task(obj.fetch_cost_for_last_month())
+            task6 = asyncio.create_task(obj.fetch_cost_for_last_month())
+            task7 = asyncio.create_task(obj.fetch_cost_for_last_month())
 
             obj.final_returned_data["last_twelve_months"] = await task1
             obj.final_returned_data["current_year"] = await task2
             obj.final_returned_data["last_three_months"] = await task3
             obj.final_returned_data["last_month"] = await task4
+            obj.final_returned_data["last_month2"] = await task5
+            obj.final_returned_data["last_month3"] = await task6
+            obj.final_returned_data["last_month4"] = await task7
             return obj.final_returned_data
 
 def format_data(data):
