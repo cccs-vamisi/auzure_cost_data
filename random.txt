@@ -1,6 +1,0 @@
-
-        # for item in result.rows:
-        #     date_str = item[1]
-        #     date_obj = datetime.fromisoformat(date_str)
-        #     month  = date_obj.strftime("%B")
-        #     year = date_obj.year
