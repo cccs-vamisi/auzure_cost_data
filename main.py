@@ -1,21 +1,14 @@
 
 import os
-import json
 import asyncio
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
-from azure.mgmt.costmanagement.models import QueryDefinition, QueryDataset, QueryTimePeriod, QueryAggregation, QueryGrouping
-from datetime import datetime, timedelta, timezone
-from openpyxl import Workbook, load_workbook
+from azure.mgmt.costmanagement.models import QueryDefinition, QueryDataset, QueryTimePeriod, QueryAggregation
+from datetime import datetime, timedelta
+from openpyxl import Workbook
 from dateutil.relativedelta import relativedelta 
 import time
-
-print(f"Welcome to my program {os.getlogin()}! This program collects Azure resource cost data for you" + "\n"+
-      "and sends it to an Excel sheet")
-print("Make sure you read the readme file before executing the code")
-print("***********************")
-print("***********************")
 
 # Initialize the Azure Cost Management client with authentication:
 credential = DefaultAzureCredential()
@@ -75,14 +68,13 @@ async def main_method(resource_group, subscription_id):
 
 
 def format_data(data):
-    for key in data.keys():
-        list_item = data[key]
-        for i in range(0, len(list_item)):
-            date_str = list_item[i][1]
-            date_obj = datetime.fromisoformat(date_str)
-            month = date_obj.strftime("%B")
-            year =  date_obj.strftime("%Y")
-            list_item[i][1] = f"{month}, {year}"
+    list_item = data["last_twelve_months"]
+    for i in range(0, len(list_item)):
+        date_str = list_item[i][1]
+        date_obj = datetime.fromisoformat(date_str)
+        month = date_obj.strftime("%B")
+        year =  date_obj.strftime("%Y")
+        list_item[i][1] = f"{month}, {year}"
     return data
 
 def file_reading():
@@ -133,8 +125,6 @@ def file_reading():
         subscription_id = subscription_Id_list[i]
         unformatted_data = asyncio.run(main_method(resource_group, subscription_id))
         formatted_data = format_data(unformatted_data)
-        print(formatted_data)
-        
         formatted_data = formatted_data['last_twelve_months']
         for j in range(0, len(formatted_data)):
             start_column = j + 5
