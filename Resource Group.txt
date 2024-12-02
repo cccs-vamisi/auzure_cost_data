@@ -2,7 +2,6 @@ AnalyticalPlatformPilot
 AnalyticalPlatform
 AnalyticalPlatformUDev
 AnalyticalPlatformDev
-JackieTraining
 Fawkes
 Paladin
 Paperplane
