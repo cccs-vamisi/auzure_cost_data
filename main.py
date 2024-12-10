@@ -1,5 +1,3 @@
-
-import os
 import asyncio
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
@@ -29,7 +27,7 @@ class Data():
         self.subscription_id = subscription_id
         self.scope = scope
         self.final_returned_data = final_returned_data
-        
+
     # This helper method will help remove repetitive code
     def helper_method(self, from_date, to_date, scope_value):
         time_period=QueryTimePeriod(from_property=from_date, to=to_date)
